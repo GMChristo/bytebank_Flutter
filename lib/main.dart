@@ -9,7 +9,7 @@ void main() => runApp(
           appBar: AppBar(
             //adiciona um widget de AppBar ao layout ja existente;
             title: Text(
-                'Transferências'), //define o texto que eh mostrado na Appbar
+                'Transferências!'), //define o texto que eh mostrado na Appbar
           ),
           floatingActionButton: FloatingActionButton( //adiciona um botao flutuante
             child: Icon(Icons.add), //define o estilo do botao, importando os estilos de Icon, e selecionando a qual usar em Icons.add
