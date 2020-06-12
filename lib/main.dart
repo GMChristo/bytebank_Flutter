@@ -10,7 +10,7 @@ class BytebankApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         //aplica o widget de Scaffold, um layout;
-        body: FormularioTransferencia(),
+        body: ListaTransferencias(),
       ),
     ); //implementa o uso do Material Design e informa para o MaterialApp que a pagina inicial eh a home;
   }
@@ -29,69 +29,82 @@ class FormularioTransferencia extends StatelessWidget {
         ),
         body: Column(
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(
-                  16.0), //padding cria o espaço entre os widgets, o .all aplica a toda a borda padding o msm valor
-              child: TextField(
-                controller: _controladorCampoNumeroConta,
-                style: TextStyle(
-                    fontSize:
-                        24.0 //define o tamanho da fonte que informa o nome do campo
-                    ),
-                decoration: InputDecoration(
-                    labelText: 'Número da conta', //apresenta o nome do campo
-                    hintText:
-                        '0000' //mostra uma dica quando o campo eh selecionado
-                    ),
-                keyboardType: TextInputType
-                    .number, //define o tipo de teclado que sera mostrado ao selecionar o campo, nesse caso teclado numerico
-              ),
+            Editor(
+              controlador: _controladorCampoNumeroConta,
+              dica: '0000',
+              rotulo: 'Número da Conta',
             ),
-            Padding(
-              padding: const EdgeInsets.all(
-                  16.0), //padding cria o espaço entre os widgets, o .all aplica a toda a borda padding o msm valor
-              child: TextField(
-                controller: _controladorCampoValor,
-                style: TextStyle(
-                    fontSize:
-                        24.0 //define o tamanho da fonte que informa o nome do campo
-                    ),
-                decoration: InputDecoration(
-                    labelText: 'Valor', //apresenta o nome do campo
-                    hintText:
-                        '0,00' //mostra uma dica quando o campo eh selecionado
-                    ),
-                keyboardType: TextInputType.number,
-              ),
+            Editor(
+              controlador: _controladorCampoValor,
+              dica: '0.00',
+              rotulo: 'Valor',
+              icone: Icons.monetization_on,
             ),
             RaisedButton(
               child: Text('Confirmar'),
               onPressed: () {
-                debugPrint(
-                    'Clicou no confirmar'); //debugPrint serve para apresentar msg no console, igual printf
-                final int numeroConta = int.tryParse(_controladorCampoNumeroConta
-                    .text); //cria variavel para receber o num da conta, o parse converte ela de text para int
-                final double valor =
-                    double.tryParse(_controladorCampoValor.text);
-                if (numeroConta != null && valor != null) {
-                  final transferenciaCriada = Transferencia(valor, numeroConta);
-                  debugPrint(
-                      '$transferenciaCriada'); //o '$transferenciaCriada' vai imprimir o valor da variavel
-                  Scaffold.of(context).showSnackBar( //implementa SnackBar, serve para apresentar uma pequena barra de msg na tela do celular
-                    SnackBar(
-                      content: Text('$transferenciaCriada'),
-                    ),
-                  );
-                }
+                //tb pode ser escrito como: onPressed () => criaTransferencia()
+                _criaTransferencia(context);
               },
             ),
           ],
         ));
   }
+
+  void _criaTransferencia(BuildContext context) {
+    final int numeroConta = int.tryParse(_controladorCampoNumeroConta
+        .text); //cria variavel para receber o num da conta, o parse converte ela de text para int
+    final double valor = double.tryParse(_controladorCampoValor.text);
+    if (numeroConta != null && valor != null) {
+      final transferenciaCriada = Transferencia(valor, numeroConta);
+      debugPrint(
+          '$transferenciaCriada'); //serve para apresentar msg no console, igual printf, '$transferenciaCriada' vai imprimir o valor da variavel
+          Navigator.pop(context, transferenciaCriada);
+    }
+  }
+}
+
+class Editor extends StatelessWidget {
+  final TextEditingController controlador;
+  final String rotulo;
+  final String dica;
+  final IconData icone;
+
+  const Editor(
+      {this.controlador,
+      this.rotulo,
+      this.dica,
+      this.icone}); //colocar os parametros no contrutor entre {} significa que sao opcionais
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(
+          16.0), //padding cria o espaço entre os widgets, o .all aplica a toda a borda padding o msm valor
+      child: TextField(
+        controller: controlador,
+        style: TextStyle(
+            fontSize:
+                24.0 //define o tamanho da fonte que informa o nome do campo
+            ),
+        decoration: InputDecoration(
+          icon: icone != null
+              ? Icon(icone)
+              : null, //verifica se recebeu do contrutor um icone, se sim apresenta o icone se nao retorna null
+          labelText: rotulo, //apresenta o nome do campo
+          hintText: dica, //mostra uma dica quando o campo eh selecionado
+        ),
+        keyboardType: TextInputType
+            .number, //define o tipo de teclado que sera mostrado ao selecionar o campo, nesse caso teclado numerico
+      ),
+    );
+  }
 }
 
 class ListaTransferencias extends StatelessWidget {
   //StatelessWidget nao tem a capacidade de alterar o conteudo diferente do StatefulWidget que consegue alterar o conteudo;
+
+  final List<Transferencia> _transferencias = List(); //cria uma lista de Transferencias
 
   @override
   Widget build(BuildContext context) {
@@ -101,15 +114,31 @@ class ListaTransferencias extends StatelessWidget {
         title:
             Text('Transferências!'), //define o texto que eh mostrado na Appbar;
       ),
-      body: Column(
-        children: <Widget>[
-          //para adicionar deixei o cursor no card e apertei alt+enter, selecionei wrap with column que ele adicionou o codigo de column;
-          ItemTransferencia(Transferencia(100.0, 0102)),
-          ItemTransferencia(Transferencia(200.0, 0103)),
-        ],
+      body: ListView.builder(
+        itemCount: _transferencias.length, // define o tamanho da lista a ser apresentada na tela de acordo com a quantidade na List
+        itemBuilder: (context, indice){
+          final transferencia = _transferencias[indice];
+          return ItemTransferencia(transferencia);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         //adiciona um botao flutuante;
+        onPressed: () {
+          final Future<Transferencia> future = Navigator.push(
+            //Future implementa um callback que vai funcionar para receber uma possivel resposta durante a navegação
+            //O <Transferencia> esta informando que o retorno vai ser do tipo Transferencia
+            // Navigator.push eh o comando para implementar a mudança de tela
+            context,
+            MaterialPageRoute(builder: (context) {
+              //MaterialPageRoute eh usado para efetuar toda a tarefa de trasnsição de tela
+              return FormularioTransferencia();
+            }),
+          );
+          future.then((transferenciaRecebida){
+            debugPrint('$transferenciaRecebida');
+            _transferencias.add(transferenciaRecebida); //adiciona a transferencia que veio do future na lista
+          },);
+        },
         child: Icon(Icons
             .add), //child serve para colocar um widget dentro de outro widget;
         //Icons - cria um botao, importando os estilos de Icon, e selecionando qual estilo usar em Icons.add;
